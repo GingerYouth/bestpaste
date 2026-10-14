@@ -22,11 +22,14 @@ if [ "${1:-}" = --uninstall ]; then
   exit 0
 fi
 
-ask_picker() {
+ask_picker() { # current choice is the default; a different answer switches the popup
   mkdir -p "$(dirname "$conf")"
-  local a=1
-  [ -t 0 ] && read -rp "Popup: [1] rofi (image gallery, clear-all)  [2] fuzzel (light, text only)  [1]: " a
-  [ "$a" = 2 ] && echo fuzzel > "$conf" || echo rofi > "$conf"
+  local cur=rofi a d=1
+  [ -f "$conf" ] && cur=$(cat "$conf")
+  [ "$cur" = fuzzel ] && d=2
+  a=$d
+  [ -t 0 ] && read -rp "Popup: [1] rofi (image gallery, clear-all)  [2] fuzzel (light, text only)  [$d, installed: ${cur}]: " a
+  [ "${a:-$d}" = 2 ] && echo fuzzel > "$conf" || echo rofi > "$conf"
 }
 if [ "${1:-}" = --picker ]; then
   ask_picker
@@ -39,7 +42,7 @@ fi
 [ "${XDG_SESSION_TYPE:-}" = wayland ] || { echo "Wayland session required." >&2; exit 1; }
 
 # 1. packages (kdotool may be AUR-only)
-[ -f "$conf" ] || ask_picker
+ask_picker
 picker=$(cat "$conf")
 sudo pacman -S --needed cliphist wl-clipboard ydotool "$picker"
 [ "$picker" = rofi ] && sudo pacman -S --needed imagemagick
