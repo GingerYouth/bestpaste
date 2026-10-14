@@ -18,12 +18,12 @@ else
   view=text
   while :; do
     if [ $view = text ]; then
-      choice=$(cliphist list | head -n 50 | rofi -dmenu -i -kb-custom-1 alt+i -kb-custom-2 alt+x -mesg 'Alt+I: images   Alt+X: clear all' \
+      choice=$(cliphist list | head -n 50 | rofi -dmenu -p '' -i -kb-custom-1 alt+i -kb-custom-2 alt+x -mesg 'Alt+I: images   Alt+X: clear all' \
         -theme-str 'window {width: 600px;} listview {lines: 10;}')
     else
       choice=$(cliphist list | grep -E "$img" | head -n 20 | while IFS=$'\t' read -r id line; do
         printf '%s\0icon\x1f%s\n' "$id" "$(thumb "$id")"
-      done | rofi -dmenu -show-icons -kb-custom-1 alt+i -kb-custom-2 alt+x -mesg 'Alt+I: text   Alt+X: clear all' \
+      done | rofi -dmenu -p '' -show-icons -kb-custom-1 alt+i -kb-custom-2 alt+x -mesg 'Alt+I: text   Alt+X: clear all' \
         -theme-str 'window {width: 700px;} listview {columns: 3; lines: 3;} element {orientation: vertical;} element-icon {size: 12em;} element-text {horizontal-align: 0.5;}')
     fi
     rc=$?
