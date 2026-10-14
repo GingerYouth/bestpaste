@@ -1,37 +1,42 @@
 #!/usr/bin/env bash
 export YDOTOOL_SOCKET=${YDOTOOL_SOCKET:-$XDG_RUNTIME_DIR/.ydotool_socket}
 class=$(kdotool getactivewindow getwindowclassname 2>/dev/null)
-cache=${XDG_CACHE_HOME:-$HOME/.cache}/bestpaste
-mkdir -p "$cache"
-find "$cache" -mtime +7 -delete
-# rofi can't size rows individually, so text and images are two views: Alt+I toggles
-img='binary data.*(png|jpe?g|bmp)'
-thumb() { # id -> cached thumbnail path
-  f=$cache/$1.png
-  [ -f "$f" ] || cliphist decode "$1" | magick - -resize 'x320>' "$f" 2>/dev/null
-  echo "$f"
-}
-view=text
-while :; do
-  if [ $view = text ]; then
-    choice=$(cliphist list | head -n 50 | rofi -dmenu -i -kb-custom-1 alt+i -kb-custom-2 alt+x -mesg 'Alt+I: images   Alt+X: clear all' \
-      -theme-str 'window {width: 600px;} listview {lines: 10;}')
-  else
-    choice=$(cliphist list | grep -E "$img" | head -n 20 | while IFS=$'\t' read -r id line; do
-      printf '%s\0icon\x1f%s\n' "$id" "$(thumb "$id")"
-    done | rofi -dmenu -show-icons -kb-custom-1 alt+i -kb-custom-2 alt+x -mesg 'Alt+I: text   Alt+X: clear all' \
-      -theme-str 'window {width: 700px;} listview {columns: 3; lines: 3;} element {orientation: vertical;} element-icon {size: 12em;} element-text {horizontal-align: 0.5;}')
-  fi
-  rc=$?
-  if [ $rc = 11 ]; then
-    [ "$(printf 'No\nYes, clear all history\n' | rofi -dmenu -p 'Clear clipboard history?')" = 'Yes, clear all history' ] &&
-      { cliphist wipe; find "$cache" -type f -delete; exit 0; }
-    continue
-  fi
-  [ $rc = 10 ] || break
-  [ $view = text ] && view=img || view=text
-done
-[ $rc = 0 ] || exit 0
+picker=$(cat ~/.config/bestpaste/picker 2>/dev/null || echo rofi)
+if [ "$picker" = fuzzel ]; then
+  choice=$(cliphist list | head -n 50 | fuzzel --dmenu) || exit 0
+else
+  cache=${XDG_CACHE_HOME:-$HOME/.cache}/bestpaste
+  mkdir -p "$cache"
+  find "$cache" -mtime +7 -delete
+  # rofi can't size rows individually, so text and images are two views: Alt+I toggles
+  img='binary data.*(png|jpe?g|bmp)'
+  thumb() { # id -> cached thumbnail path
+    f=$cache/$1.png
+    [ -f "$f" ] || cliphist decode "$1" | magick - -resize 'x320>' "$f" 2>/dev/null
+    echo "$f"
+  }
+  view=text
+  while :; do
+    if [ $view = text ]; then
+      choice=$(cliphist list | head -n 50 | rofi -dmenu -i -kb-custom-1 alt+i -kb-custom-2 alt+x -mesg 'Alt+I: images   Alt+X: clear all' \
+        -theme-str 'window {width: 600px;} listview {lines: 10;}')
+    else
+      choice=$(cliphist list | grep -E "$img" | head -n 20 | while IFS=$'\t' read -r id line; do
+        printf '%s\0icon\x1f%s\n' "$id" "$(thumb "$id")"
+      done | rofi -dmenu -show-icons -kb-custom-1 alt+i -kb-custom-2 alt+x -mesg 'Alt+I: text   Alt+X: clear all' \
+        -theme-str 'window {width: 700px;} listview {columns: 3; lines: 3;} element {orientation: vertical;} element-icon {size: 12em;} element-text {horizontal-align: 0.5;}')
+    fi
+    rc=$?
+    if [ $rc = 11 ]; then
+      [ "$(printf 'No\nYes, clear all history\n' | rofi -dmenu -p 'Clear clipboard history?')" = 'Yes, clear all history' ] &&
+        { cliphist wipe; find "$cache" -type f -delete; exit 0; }
+      continue
+    fi
+    [ $rc = 10 ] || break
+    [ $view = text ] && view=img || view=text
+  done
+  [ $rc = 0 ] || exit 0
+fi
 [ -z "$choice" ] && exit 0
 printf '%s' "$choice" | cliphist decode | wl-copy
 sleep 0.2
