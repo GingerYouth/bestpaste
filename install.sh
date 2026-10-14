@@ -28,7 +28,7 @@ ask_picker() { # current choice is the default; a different answer switches the 
   [ -f "$conf" ] && cur=$(cat "$conf")
   [ "$cur" = fuzzel ] && d=2
   a=$d
-  [ -t 0 ] && read -rp "Popup: [1] rofi (image gallery, clear-all)  [2] fuzzel (light, text only)  [$d, installed: ${cur}]: " a
+  [ -t 0 ] && read -rp "Popup: [1] rofi (recommended: image gallery, clear-all)  [2] fuzzel (light, text only)  [$d, installed: ${cur}]: " a
   [ "${a:-$d}" = 2 ] && echo fuzzel > "$conf" || echo rofi > "$conf"
 }
 if [ "${1:-}" = --picker ]; then
